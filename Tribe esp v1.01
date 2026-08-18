@@ -1,0 +1,623 @@
+--// TRIBE SURVIVAL ESP - OPTIMIZED
+--// Roblox Studio - LocalScript
+--// 3 Player + 3 Wood + 3 Stone + 3 Apple + 3 Food
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+
+local LocalPlayer = Players.LocalPlayer
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+
+--==================================================
+-- SETTINGS
+--==================================================
+
+local ESP_ENABLED = true
+
+local MAX_PLAYERS = 3
+local MAX_EACH_RESOURCE = 3
+
+local PLAYER_UPDATE_DELAY = 0.5
+local RESOURCE_SCAN_DELAY = 0.8
+
+--==================================================
+-- GUI
+--==================================================
+
+local Gui = Instance.new("ScreenGui")
+Gui.Name = "TribeSurvivalESP"
+Gui.ResetOnSpawn = false
+Gui.IgnoreGuiInset = true
+Gui.Parent = PlayerGui
+
+local Main = Instance.new("Frame")
+Main.Name = "Main"
+Main.Size = UDim2.fromOffset(180, 60)
+Main.Position = UDim2.new(0, 20, 0.5, -30)
+Main.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+Main.BorderSizePixel = 0
+Main.Parent = Gui
+
+local Corner = Instance.new("UICorner")
+Corner.CornerRadius = UDim.new(0, 10)
+Corner.Parent = Main
+
+local Button = Instance.new("TextButton")
+Button.Size = UDim2.new(1, -10, 1, -10)
+Button.Position = UDim2.fromOffset(5, 5)
+Button.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+Button.TextColor3 = Color3.fromRGB(255, 255, 255)
+Button.TextSize = 15
+Button.Font = Enum.Font.GothamBold
+Button.Text = "ESP: ON"
+Button.Parent = Main
+
+local ButtonCorner = Instance.new("UICorner")
+ButtonCorner.CornerRadius = UDim.new(0, 8)
+ButtonCorner.Parent = Button
+
+Button.MouseButton1Click:Connect(function()
+	ESP_ENABLED = not ESP_ENABLED
+	Button.Text = ESP_ENABLED and "ESP: ON" or "ESP: OFF"
+end)
+
+--==================================================
+-- DRAG GUI - MOBILE + PC
+--==================================================
+
+local dragging = false
+local dragStart
+local startPosition
+
+Main.InputBegan:Connect(function(input)
+
+	if input.UserInputType == Enum.UserInputType.MouseButton1
+		or input.UserInputType == Enum.UserInputType.Touch then
+
+		dragging = true
+		dragStart = input.Position
+		startPosition = Main.Position
+
+		input.Changed:Connect(function()
+
+			if input.UserInputState == Enum.UserInputState.End then
+				dragging = false
+			end
+
+		end)
+	end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+
+	if not dragging then
+		return
+	end
+
+	if input.UserInputType ~= Enum.UserInputType.MouseMovement
+		and input.UserInputType ~= Enum.UserInputType.Touch then
+		return
+	end
+
+	local delta = input.Position - dragStart
+
+	Main.Position = UDim2.new(
+		startPosition.X.Scale,
+		startPosition.X.Offset + delta.X,
+
+		startPosition.Y.Scale,
+		startPosition.Y.Offset + delta.Y
+	)
+end)
+
+--==================================================
+-- ESP POOL
+-- 15 SLOT CỐ ĐỊNH
+--==================================================
+
+local TOTAL_SLOTS =
+	MAX_PLAYERS + (MAX_EACH_RESOURCE * 4)
+
+local ESPPool = {}
+
+local function createESP(index)
+
+	local line = Instance.new("Frame")
+	line.Name = "Line_" .. index
+	line.AnchorPoint = Vector2.new(0.5, 0.5)
+	line.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	line.BorderSizePixel = 0
+	line.Size = UDim2.fromOffset(0, 2)
+	line.Visible = false
+	line.Parent = Gui
+
+	local text = Instance.new("TextLabel")
+	text.Name = "Text_" .. index
+	text.BackgroundTransparency = 1
+	text.TextColor3 = Color3.fromRGB(255, 255, 255)
+	text.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+	text.TextStrokeTransparency = 0
+	text.Font = Enum.Font.GothamBold
+	text.TextSize = 14
+	text.Size = UDim2.fromOffset(220, 40)
+	text.AnchorPoint = Vector2.new(0.5, 0.5)
+	text.Visible = false
+	text.Parent = Gui
+
+	return {
+		Line = line,
+		Text = text
+	}
+end
+
+-- Tạo đúng 15 ESP một lần
+for i = 1, TOTAL_SLOTS do
+	ESPPool[i] = createESP(i)
+end
+
+--==================================================
+-- CACHE RESOURCE
+--==================================================
+
+local ResourceCache = {
+	Wood = {},
+	Stone = {},
+	Apple = {},
+	Food = {}
+}
+
+--==================================================
+-- GET ROOT
+--==================================================
+
+local function getRoot(object)
+
+	if object:IsA("BasePart") then
+		return object
+	end
+
+	if object:IsA("Model") then
+
+		if object.PrimaryPart then
+			return object.PrimaryPart
+		end
+
+		return object:FindFirstChildWhichIsA(
+			"BasePart",
+			true
+		)
+	end
+
+	return nil
+end
+
+--==================================================
+-- RESOURCE TYPE
+--==================================================
+
+local function getResourceType(object)
+
+	local name = object.Name:lower()
+
+	if name:find("wood") then
+		return "Wood"
+	end
+
+	if name:find("stone") then
+		return "Stone"
+	end
+
+	if name:find("apple") then
+		return "Apple"
+	end
+
+	if name:find("food") then
+		return "Food"
+	end
+
+	return nil
+end
+
+--==================================================
+-- QUÉT RESOURCE
+-- Chỉ chạy mỗi 0.8 giây
+--==================================================
+
+local function rebuildResourceCache()
+
+	local newCache = {
+		Wood = {},
+		Stone = {},
+		Apple = {},
+		Food = {}
+	}
+
+	for _, object in ipairs(workspace:GetDescendants()) do
+
+		if object:IsA("BasePart")
+			or object:IsA("Model") then
+
+			local resourceType =
+				getResourceType(object)
+
+			if resourceType then
+
+				local root = getRoot(object)
+
+				if root and root:IsDescendantOf(workspace) then
+
+					table.insert(
+						newCache[resourceType],
+						{
+							Object = object,
+							Root = root,
+							Name = resourceType
+						}
+					)
+				end
+			end
+		end
+	end
+
+	ResourceCache = newCache
+end
+
+--==================================================
+-- LỌC 3 RESOURCE GẦN NHẤT
+--==================================================
+
+local function getNearestResources(myRoot)
+
+	local result = {}
+
+	for resourceType, list in pairs(ResourceCache) do
+
+		local sorted = {}
+
+		for _, data in ipairs(list) do
+
+			local root = data.Root
+
+			if root
+				and root.Parent
+				and root:IsDescendantOf(workspace) then
+
+				local distance =
+					(myRoot.Position - root.Position).Magnitude
+
+				table.insert(sorted, {
+					Root = root,
+					Name = resourceType,
+					Type = resourceType,
+					Distance = distance
+				})
+			end
+		end
+
+		table.sort(sorted, function(a, b)
+			return a.Distance < b.Distance
+		end)
+
+		for i = 1, math.min(
+			MAX_EACH_RESOURCE,
+			#sorted
+		) do
+
+			table.insert(result, sorted[i])
+
+		end
+	end
+
+	return result
+end
+
+--==================================================
+-- CACHE PLAYER TARGET
+--==================================================
+
+local PlayerTargets = {}
+
+local function updatePlayerTargets()
+
+	local character = LocalPlayer.Character
+
+	local myRoot =
+		character
+		and character:FindFirstChild("HumanoidRootPart")
+
+	if not myRoot then
+		PlayerTargets = {}
+		return
+	end
+
+	local list = {}
+
+	for _, player in ipairs(Players:GetPlayers()) do
+
+		if player ~= LocalPlayer then
+
+			local char = player.Character
+
+			local root =
+				char
+				and char:FindFirstChild("HumanoidRootPart")
+
+			local humanoid =
+				char
+				and char:FindFirstChildOfClass("Humanoid")
+
+			if root
+				and humanoid
+				and humanoid.Health > 0 then
+
+				local distance =
+					(myRoot.Position - root.Position).Magnitude
+
+				table.insert(list, {
+					Root = root,
+					Name = player.DisplayName,
+					Type = "Player",
+					Distance = distance
+				})
+			end
+		end
+	end
+
+	table.sort(list, function(a, b)
+		return a.Distance < b.Distance
+	end)
+
+	PlayerTargets = {}
+
+	for i = 1, math.min(MAX_PLAYERS, #list) do
+		PlayerTargets[i] = list[i]
+	end
+end
+
+--==================================================
+-- LINE
+--==================================================
+
+local function updateLine(line, from, to)
+
+	local difference = to - from
+
+	local length = difference.Magnitude
+
+	if length < 1 then
+		line.Visible = false
+		return
+	end
+
+	line.Position = UDim2.fromOffset(
+		(from.X + to.X) / 2,
+		(from.Y + to.Y) / 2
+	)
+
+	line.Size = UDim2.fromOffset(
+		length,
+		2
+	)
+
+	line.Rotation =
+		math.deg(
+			math.atan2(
+				difference.Y,
+				difference.X
+			)
+		)
+
+	line.Visible = true
+end
+
+--==================================================
+-- TEXT COLOR
+--==================================================
+
+local function getTextColor(data)
+
+	if data.Type == "Player" then
+		return Color3.fromRGB(0, 255, 0)
+	end
+
+	if data.Type == "Apple" then
+		return Color3.fromRGB(255, 0, 0)
+	end
+
+	return Color3.fromRGB(255, 255, 255)
+end
+
+--==================================================
+-- HIDE POOL
+--==================================================
+
+local function hideUnused(startIndex)
+
+	for i = startIndex, TOTAL_SLOTS do
+
+		ESPPool[i].Line.Visible = false
+		ESPPool[i].Text.Visible = false
+
+	end
+end
+
+--==================================================
+-- RESOURCE CACHE TIMER
+--==================================================
+
+task.spawn(function()
+
+	while true do
+
+		rebuildResourceCache()
+
+		task.wait(RESOURCE_SCAN_DELAY)
+
+	end
+end)
+
+--==================================================
+-- PLAYER TARGET TIMER
+--==================================================
+
+task.spawn(function()
+
+	while true do
+
+		updatePlayerTargets()
+
+		task.wait(PLAYER_UPDATE_DELAY)
+
+	end
+end)
+
+--==================================================
+-- ESP RENDER
+-- Chỉ cập nhật vị trí hiển thị
+--==================================================
+
+RunService.RenderStepped:Connect(function()
+
+	if not ESP_ENABLED then
+		hideUnused(1)
+		return
+	end
+
+	local Camera = workspace.CurrentCamera
+
+	if not Camera then
+		hideUnused(1)
+		return
+	end
+
+	local character = LocalPlayer.Character
+
+	local myRoot =
+		character
+		and character:FindFirstChild("HumanoidRootPart")
+
+	if not myRoot then
+		hideUnused(1)
+		return
+	end
+
+	--==============================================
+	-- TARGET LIST
+	--==============================================
+
+	local targets = {}
+
+	-- Player
+	for _, data in ipairs(PlayerTargets) do
+		table.insert(targets, data)
+	end
+
+	-- Resource
+	for _, data in ipairs(
+		getNearestResources(myRoot)
+	) do
+		table.insert(targets, data)
+	end
+
+	--==============================================
+	-- CENTER SCREEN
+	--==============================================
+
+	local center = Vector2.new(
+		Camera.ViewportSize.X / 2,
+		Camera.ViewportSize.Y / 2
+	)
+
+	--==============================================
+	-- DRAW
+	--==============================================
+
+	for i = 1, TOTAL_SLOTS do
+
+		local data = targets[i]
+		local esp = ESPPool[i]
+
+		if not data
+			or not data.Root
+			or not data.Root.Parent then
+
+			esp.Line.Visible = false
+			esp.Text.Visible = false
+
+			continue
+		end
+
+		local screenPosition =
+			Camera:WorldToViewportPoint(
+				data.Root.Position
+			)
+
+		local targetPosition =
+			Vector2.new(
+				screenPosition.X,
+				screenPosition.Y
+			)
+
+		-- Không cần nhìn thấy vẫn hiển thị
+		if screenPosition.Z <= 0 then
+
+			local direction =
+				targetPosition - center
+
+			if direction.Magnitude < 1 then
+				direction = Vector2.new(0, -1)
+			else
+				direction = direction.Unit
+			end
+
+			targetPosition =
+				center - direction * 1000
+		end
+
+		--==========================================
+		-- LINE
+		--==========================================
+
+		updateLine(
+			esp.Line,
+			center,
+			targetPosition
+		)
+
+		--==========================================
+		-- TEXT
+		--==========================================
+
+		local x = math.clamp(
+			targetPosition.X,
+			40,
+			Camera.ViewportSize.X - 40
+		)
+
+		local y = math.clamp(
+			targetPosition.Y - 30,
+			20,
+			Camera.ViewportSize.Y - 20
+		)
+
+		esp.Text.Position =
+			UDim2.fromOffset(x, y)
+
+		esp.Text.TextColor3 =
+			getTextColor(data)
+
+		esp.Text.Text =
+			data.Name
+			.. "\n"
+			.. math.floor(data.Distance)
+			.. " m"
+
+		esp.Text.Visible = true
+	end
+
+	-- Ẩn slot dư
+	if #targets < TOTAL_SLOTS then
+		hideUnused(#targets + 1)
+	end
+end)
