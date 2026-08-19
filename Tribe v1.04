@@ -1,0 +1,2216 @@
+--// TRIBE SURVIVAL HUB V3
+--// ONE LOCAL SCRIPT
+--// Roblox Studio
+--// Đặt vào StarterPlayer > StarterPlayerScripts
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UIS = game:GetService("UserInputService")
+local Lighting = game:GetService("Lighting")
+local VirtualUser = game:GetService("VirtualUser")
+
+local LP = Players.LocalPlayer
+local PG = LP:WaitForChild("PlayerGui")
+
+--==================================================
+-- SETTINGS
+--==================================================
+
+local ESP = true
+local AIM = false
+local AUTO_FARM = false
+local PLAYER_FARM = false
+
+local ANTI_AFK = true
+local FULL_BRIGHT = false
+local NO_FOG = false
+local WARNING = true
+
+local POWER = false
+local POWER_LOCKED = false
+
+local FARM_TYPE = "Wood"
+
+local FARM_SPEED = 16
+local POWER_DISTANCE = 10
+
+-- AIM FOV: 1 - 50
+local AIM_FOV = 25
+
+local WARNING_DISTANCE = 30
+
+local MAX_PLAYER = 3
+local MAX_RESOURCE = 3
+
+local RESOURCE_DELAY = 0.8
+local PLAYER_DELAY = 0.5
+
+local AimTarget
+
+--==================================================
+-- REMOVE OLD GUI
+--==================================================
+
+local old = PG:FindFirstChild("TribeSurvivalHub")
+
+if old then
+	old:Destroy()
+end
+
+--==================================================
+-- GUI
+--==================================================
+
+local Gui = Instance.new("ScreenGui")
+Gui.Name = "TribeSurvivalHub"
+Gui.ResetOnSpawn = false
+Gui.IgnoreGuiInset = true
+Gui.Parent = PG
+
+local Main = Instance.new("Frame")
+Main.Size = UDim2.fromOffset(280,350)
+Main.Position = UDim2.new(.5,-140,.3,0)
+Main.BackgroundColor3 = Color3.fromRGB(25,25,25)
+Main.BorderSizePixel = 0
+Main.Active = true
+Main.Parent = Gui
+
+Instance.new("UICorner",Main).CornerRadius = UDim.new(0,12)
+
+--==================================================
+-- TITLE
+--==================================================
+
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1,-45,0,32)
+Title.Position = UDim2.fromOffset(10,3)
+Title.BackgroundTransparency = 1
+Title.Text = "⚡ TRIBE SURVIVAL"
+Title.TextColor3 = Color3.new(1,1,1)
+Title.Font = Enum.Font.GothamBold
+Title.TextSize = 14
+Title.TextXAlignment = Enum.TextXAlignment.Left
+Title.Parent = Main
+
+local Hide = Instance.new("TextButton")
+Hide.Size = UDim2.fromOffset(28,28)
+Hide.Position = UDim2.new(1,-34,0,4)
+Hide.BackgroundColor3 = Color3.fromRGB(65,65,65)
+Hide.Text = "-"
+Hide.TextColor3 = Color3.new(1,1,1)
+Hide.Font = Enum.Font.GothamBold
+Hide.TextSize = 16
+Hide.BorderSizePixel = 0
+Hide.Parent = Main
+
+Instance.new("UICorner",Hide).CornerRadius = UDim.new(0,7)
+
+--==================================================
+-- TAB BAR
+--==================================================
+
+local Tabs = Instance.new("Frame")
+Tabs.Size = UDim2.new(1,-20,0,30)
+Tabs.Position = UDim2.fromOffset(10,38)
+Tabs.BackgroundColor3 = Color3.fromRGB(35,35,35)
+Tabs.BorderSizePixel = 0
+Tabs.Parent = Main
+
+Instance.new("UICorner",Tabs).CornerRadius = UDim.new(0,8)
+
+local function MakeTab(text,x)
+
+	local b = Instance.new("TextButton")
+
+	b.Size = UDim2.new(.25,-3,1,-4)
+	b.Position = UDim2.new(x,2,0,2)
+
+	b.BackgroundColor3 =
+		Color3.fromRGB(50,50,50)
+
+	b.TextColor3 =
+		Color3.new(1,1,1)
+
+	b.Text = text
+	b.Font = Enum.Font.GothamBold
+	b.TextSize = 9
+	b.BorderSizePixel = 0
+	b.Parent = Tabs
+
+	Instance.new("UICorner",b)
+		.CornerRadius = UDim.new(0,6)
+
+	return b
+end
+
+local ESPTab = MakeTab("👁 ESP",0)
+local AIMTab = MakeTab("🎯 AIM",.25)
+local FarmTab = MakeTab("🌲 FARM",.5)
+local MiscTab = MakeTab("⚙ MISC",.75)
+
+ESPTab.BackgroundColor3 =
+	Color3.fromRGB(0,170,255)
+
+--==================================================
+-- CONTENT
+--==================================================
+
+local Content = Instance.new("Frame")
+Content.Size = UDim2.new(1,-20,1,-80)
+Content.Position = UDim2.fromOffset(10,75)
+Content.BackgroundTransparency = 1
+Content.Parent = Main
+
+local function Page()
+
+	local f = Instance.new("Frame")
+
+	f.Size = UDim2.fromScale(1,1)
+	f.BackgroundTransparency = 1
+	f.Visible = false
+	f.Parent = Content
+
+	return f
+end
+
+local ESPPage = Page()
+local AIMPage = Page()
+local FarmPage = Page()
+local MiscPage = Page()
+
+ESPPage.Visible = true
+
+--==================================================
+-- BUTTON FUNCTION
+--==================================================
+
+local function Button(parent,text,y)
+
+	local b = Instance.new("TextButton")
+
+	b.Size = UDim2.new(1,0,0,34)
+	b.Position = UDim2.fromOffset(0,y)
+
+	b.BackgroundColor3 =
+		Color3.fromRGB(180,50,50)
+
+	b.Text = text
+
+	b.TextColor3 =
+		Color3.new(1,1,1)
+
+	b.Font =
+		Enum.Font.GothamBold
+
+	b.TextSize = 12
+	b.BorderSizePixel = 0
+	b.Parent = parent
+
+	Instance.new("UICorner",b)
+		.CornerRadius = UDim.new(0,8)
+
+	return b
+end
+
+--==================================================
+-- ESP PAGE
+--==================================================
+
+local ESPButton = Button(
+	ESPPage,
+	"ESP : ON",
+	0
+)
+
+ESPButton.BackgroundColor3 =
+	Color3.fromRGB(40,180,40)
+
+local ESPInfo = Instance.new("TextLabel")
+
+ESPInfo.Size =
+	UDim2.new(1,0,0,110)
+
+ESPInfo.Position =
+	UDim2.fromOffset(0,45)
+
+ESPInfo.BackgroundTransparency = 1
+
+ESPInfo.TextColor3 =
+	Color3.fromRGB(190,190,190)
+
+ESPInfo.Font =
+	Enum.Font.Gotham
+
+ESPInfo.TextSize = 11
+ESPInfo.TextWrapped = true
+
+ESPInfo.Text =
+	"PLAYER = Green\n"..
+	"WOOD = Brown\n"..
+	"STONE = White\n"..
+	"APPLE = Red\n"..
+	"FOOD = Orange\n\n"..
+	"Player: tối đa 3\n"..
+	"Mỗi resource: tối đa 3"
+
+ESPInfo.Parent = ESPPage
+
+--==================================================
+-- AIM PAGE
+--==================================================
+
+local AIMButton = Button(
+	AIMPage,
+	"AIM : OFF",
+	0
+)
+
+local AIMLabel = Instance.new("TextLabel")
+
+AIMLabel.Size =
+	UDim2.new(1,0,0,20)
+
+AIMLabel.Position =
+	UDim2.fromOffset(0,43)
+
+AIMLabel.BackgroundTransparency = 1
+
+AIMLabel.Text =
+	"FOV: 25 / 50"
+
+AIMLabel.TextColor3 =
+	Color3.fromRGB(200,200,200)
+
+AIMLabel.Font =
+	Enum.Font.GothamBold
+
+AIMLabel.TextSize = 12
+AIMLabel.Parent = AIMPage
+
+local AIMSlider = Instance.new("Frame")
+
+AIMSlider.Size =
+	UDim2.new(1,0,0,18)
+
+AIMSlider.Position =
+	UDim2.fromOffset(0,68)
+
+AIMSlider.BackgroundColor3 =
+	Color3.fromRGB(50,50,50)
+
+AIMSlider.BorderSizePixel = 0
+AIMSlider.Active = true
+AIMSlider.Parent = AIMPage
+
+Instance.new("UICorner",AIMSlider)
+	.CornerRadius = UDim.new(0,9)
+
+local AIMKnob = Instance.new("Frame")
+
+AIMKnob.Size =
+	UDim2.fromOffset(20,18)
+
+AIMKnob.Position =
+	UDim2.new(.5,-10,0,0)
+
+AIMKnob.BackgroundColor3 =
+	Color3.fromRGB(0,170,255)
+
+AIMKnob.BorderSizePixel = 0
+AIMKnob.Parent = AIMSlider
+
+Instance.new("UICorner",AIMKnob)
+	.CornerRadius = UDim.new(0,9)
+
+local aimDragging = false
+
+local function SetAIMFOV(x)
+
+	local left =
+		AIMSlider.AbsolutePosition.X
+
+	local width =
+		AIMSlider.AbsoluteSize.X
+
+	if width <= 0 then
+		return
+	end
+
+	local scale =
+		math.clamp(
+			(x-left)/width,
+			0,
+			1
+		)
+
+	AIMKnob.Position =
+		UDim2.new(
+			scale,
+			-10,
+			0,
+			0
+		)
+
+	AIM_FOV =
+		math.floor(
+			1 + scale * 49 + .5
+		)
+
+	AIMLabel.Text =
+		"FOV: "..AIM_FOV.." / 50"
+end
+
+AIMSlider.InputBegan:Connect(function(input)
+
+	if input.UserInputType ==
+		Enum.UserInputType.MouseButton1
+		or input.UserInputType ==
+		Enum.UserInputType.Touch then
+
+		aimDragging = true
+
+		SetAIMFOV(
+			input.Position.X
+		)
+	end
+end)
+
+UIS.InputChanged:Connect(function(input)
+
+	if not aimDragging then
+		return
+	end
+
+	if input.UserInputType ==
+		Enum.UserInputType.MouseMovement
+		or input.UserInputType ==
+		Enum.UserInputType.Touch then
+
+		SetAIMFOV(
+			input.Position.X
+		)
+	end
+end)
+
+UIS.InputEnded:Connect(function(input)
+
+	if input.UserInputType ==
+		Enum.UserInputType.MouseButton1
+		or input.UserInputType ==
+		Enum.UserInputType.Touch then
+
+		aimDragging = false
+	end
+end)
+
+--==================================================
+-- FARM PAGE
+--==================================================
+
+local FarmButton = Button(
+	FarmPage,
+	"AUTO FARM : OFF",
+	0
+)
+
+local PlayerFarmButton = Button(
+	FarmPage,
+	"AUTO FARM PLAYER : OFF",
+	40
+)
+
+local FarmLabel = Instance.new("TextLabel")
+
+FarmLabel.Size =
+	UDim2.new(1,0,0,20)
+
+FarmLabel.Position =
+	UDim2.fromOffset(0,82)
+
+FarmLabel.BackgroundTransparency = 1
+
+FarmLabel.Text =
+	"Target: Wood"
+
+FarmLabel.TextColor3 =
+	Color3.fromRGB(200,200,200)
+
+FarmLabel.Font =
+	Enum.Font.GothamBold
+
+FarmLabel.TextSize = 11
+FarmLabel.Parent = FarmPage
+
+local Select = Instance.new("TextButton")
+
+Select.Size =
+	UDim2.new(1,0,0,32)
+
+Select.Position =
+	UDim2.fromOffset(0,106)
+
+Select.BackgroundColor3 =
+	Color3.fromRGB(50,50,50)
+
+Select.Text =
+	"Wood ▼"
+
+Select.TextColor3 =
+	Color3.new(1,1,1)
+
+Select.Font =
+	Enum.Font.GothamBold
+
+Select.TextSize = 12
+Select.BorderSizePixel = 0
+Select.Parent = FarmPage
+
+Instance.new("UICorner",Select)
+	.CornerRadius = UDim.new(0,8)
+
+local SpeedLabel = Instance.new("TextLabel")
+
+SpeedLabel.Size =
+	UDim2.new(1,0,0,20)
+
+SpeedLabel.Position =
+	UDim2.fromOffset(0,145)
+
+SpeedLabel.BackgroundTransparency = 1
+
+SpeedLabel.Text =
+	"Speed: 16 / 20"
+
+SpeedLabel.TextColor3 =
+	Color3.fromRGB(200,200,200)
+
+SpeedLabel.Font =
+	Enum.Font.GothamBold
+
+SpeedLabel.TextSize = 11
+SpeedLabel.Parent = FarmPage
+
+local SpeedSlider = Instance.new("Frame")
+
+SpeedSlider.Size =
+	UDim2.new(1,0,0,18)
+
+SpeedSlider.Position =
+	UDim2.fromOffset(0,170)
+
+SpeedSlider.BackgroundColor3 =
+	Color3.fromRGB(50,50,50)
+
+SpeedSlider.BorderSizePixel = 0
+SpeedSlider.Active = true
+SpeedSlider.Parent = FarmPage
+
+Instance.new("UICorner",SpeedSlider)
+	.CornerRadius = UDim.new(0,9)
+
+local SpeedKnob = Instance.new("Frame")
+
+SpeedKnob.Size =
+	UDim2.fromOffset(20,18)
+
+SpeedKnob.Position =
+	UDim2.new(0,-10,0,0)
+
+SpeedKnob.BackgroundColor3 =
+	Color3.fromRGB(0,170,255)
+
+SpeedKnob.BorderSizePixel = 0
+SpeedKnob.Parent = SpeedSlider
+
+Instance.new("UICorner",SpeedKnob)
+	.CornerRadius = UDim.new(0,9)
+
+local speedDragging = false
+
+local function SetSpeed(x)
+
+	local left =
+		SpeedSlider.AbsolutePosition.X
+
+	local width =
+		SpeedSlider.AbsoluteSize.X
+
+	if width <= 0 then
+		return
+	end
+
+	local scale =
+		math.clamp(
+			(x-left)/width,
+			0,
+			1
+		)
+
+	SpeedKnob.Position =
+		UDim2.new(
+			scale,
+			-10,
+			0,
+			0
+		)
+
+	FARM_SPEED =
+		math.floor(
+			16 + scale * 4 + .5
+		)
+
+	SpeedLabel.Text =
+		"Speed: "..FARM_SPEED.." / 20"
+end
+
+SpeedSlider.InputBegan:Connect(function(input)
+
+	if input.UserInputType ==
+		Enum.UserInputType.MouseButton1
+		or input.UserInputType ==
+		Enum.UserInputType.Touch then
+
+		speedDragging = true
+
+		SetSpeed(
+			input.Position.X
+		)
+	end
+end)
+
+UIS.InputChanged:Connect(function(input)
+
+	if not speedDragging then
+		return
+	end
+
+	if input.UserInputType ==
+		Enum.UserInputType.MouseMovement
+		or input.UserInputType ==
+		Enum.UserInputType.Touch then
+
+		SetSpeed(
+			input.Position.X
+		)
+	end
+end)
+
+UIS.InputEnded:Connect(function(input)
+
+	if input.UserInputType ==
+		Enum.UserInputType.MouseButton1
+		or input.UserInputType ==
+		Enum.UserInputType.Touch then
+
+		speedDragging = false
+	end
+end)
+
+--==================================================
+-- MISC PAGE
+--==================================================
+
+local BrightButton = Button(
+	MiscPage,
+	"☀ FULL BRIGHT : OFF",
+	0
+)
+
+local FogButton = Button(
+	MiscPage,
+	"🌫 NO FOG : OFF",
+	40
+)
+
+local AFKButton = Button(
+	MiscPage,
+	"💤 ANTI AFK : ON",
+	80
+)
+
+local WarningButton = Button(
+	MiscPage,
+	"⚠ WARNING 30m : ON",
+	120
+)
+
+local PowerButton = Button(
+	MiscPage,
+	"⚡ POWER : OFF",
+	160
+)
+
+--==================================================
+-- POWER SLIDER
+--==================================================
+
+local PowerLabel = Instance.new("TextLabel")
+
+PowerLabel.Size =
+	UDim2.new(1,0,0,20)
+
+PowerLabel.Position =
+	UDim2.fromOffset(0,202)
+
+PowerLabel.BackgroundTransparency = 1
+
+PowerLabel.Text =
+	"Power: 10 / 30"
+
+PowerLabel.TextColor3 =
+	Color3.fromRGB(200,200,200)
+
+PowerLabel.Font =
+	Enum.Font.GothamBold
+
+PowerLabel.TextSize = 11
+PowerLabel.Parent = MiscPage
+
+local PowerSlider = Instance.new("Frame")
+
+PowerSlider.Size =
+	UDim2.new(1,0,0,18)
+
+PowerSlider.Position =
+	UDim2.fromOffset(0,227)
+
+PowerSlider.BackgroundColor3 =
+	Color3.fromRGB(50,50,50)
+
+PowerSlider.BorderSizePixel = 0
+PowerSlider.Active = true
+PowerSlider.Parent = MiscPage
+
+Instance.new("UICorner",PowerSlider)
+	.CornerRadius = UDim.new(0,9)
+
+local PowerKnob = Instance.new("Frame")
+
+PowerKnob.Size =
+	UDim2.fromOffset(20,18)
+
+PowerKnob.Position =
+	UDim2.new(0,-10,0,0)
+
+PowerKnob.BackgroundColor3 =
+	Color3.fromRGB(0,170,255)
+
+PowerKnob.BorderSizePixel = 0
+PowerKnob.Parent = PowerSlider
+
+Instance.new("UICorner",PowerKnob)
+	.CornerRadius = UDim.new(0,9)
+
+local powerDragging = false
+
+local function SetPower(x)
+
+	local left =
+		PowerSlider.AbsolutePosition.X
+
+	local width =
+		PowerSlider.AbsoluteSize.X
+
+	if width <= 0 then
+		return
+	end
+
+	local scale =
+		math.clamp(
+			(x-left)/width,
+			0,
+			1
+		)
+
+	PowerKnob.Position =
+		UDim2.new(
+			scale,
+			-10,
+			0,
+			0
+		)
+
+	POWER_DISTANCE =
+		math.floor(
+			10 + scale * 20 + .5
+		)
+
+	PowerLabel.Text =
+		"Power: "..POWER_DISTANCE.." / 30"
+end
+
+PowerSlider.InputBegan:Connect(function(input)
+
+	if input.UserInputType ==
+		Enum.UserInputType.MouseButton1
+		or input.UserInputType ==
+		Enum.UserInputType.Touch then
+
+		powerDragging = true
+
+		SetPower(
+			input.Position.X
+		)
+	end
+end)
+
+UIS.InputChanged:Connect(function(input)
+
+	if not powerDragging then
+		return
+	end
+
+	if input.UserInputType ==
+		Enum.UserInputType.MouseMovement
+		or input.UserInputType ==
+		Enum.UserInputType.Touch then
+
+		SetPower(
+			input.Position.X
+		)
+	end
+end)
+
+UIS.InputEnded:Connect(function(input)
+
+	if input.UserInputType ==
+		Enum.UserInputType.MouseButton1
+		or input.UserInputType ==
+		Enum.UserInputType.Touch then
+
+		powerDragging = false
+	end
+end)
+
+--==================================================
+-- POWER FLOATING BUTTON
+--==================================================
+
+local PowerFloat = Instance.new("TextButton")
+
+PowerFloat.Size =
+	UDim2.fromOffset(70,70)
+
+PowerFloat.Position =
+	UDim2.new(.8,0,.65,0)
+
+PowerFloat.BackgroundColor3 =
+	Color3.fromRGB(0,140,255)
+
+PowerFloat.Text =
+	"⚡\nPOWER"
+
+PowerFloat.TextColor3 =
+	Color3.new(1,1,1)
+
+PowerFloat.Font =
+	Enum.Font.GothamBold
+
+PowerFloat.TextSize = 12
+
+PowerFloat.BorderSizePixel = 0
+PowerFloat.Visible = false
+PowerFloat.Active = true
+PowerFloat.Parent = Gui
+
+Instance.new("UICorner",PowerFloat)
+	.CornerRadius = UDim.new(1,0)
+
+--==================================================
+-- POWER POSITION LOCK
+--==================================================
+
+local PowerLockButton = Button(
+	MiscPage,
+	"🔓 POWER POSITION : UNLOCKED",
+	260
+)
+
+PowerLockButton.BackgroundColor3 =
+	Color3.fromRGB(40,180,40)
+
+PowerLockButton.MouseButton1Click:Connect(function()
+
+	POWER_LOCKED =
+		not POWER_LOCKED
+
+	if POWER_LOCKED then
+
+		PowerLockButton.Text =
+			"🔒 POWER POSITION : LOCKED"
+
+		PowerLockButton.BackgroundColor3 =
+			Color3.fromRGB(180,50,50)
+
+	else
+
+		PowerLockButton.Text =
+			"🔓 POWER POSITION : UNLOCKED"
+
+		PowerLockButton.BackgroundColor3 =
+			Color3.fromRGB(40,180,40)
+	end
+end)
+
+--==================================================
+-- POWER FLOAT DRAG
+--==================================================
+
+local powerButtonDragging = false
+local powerStart
+local powerStartPos
+local powerMoved = false
+
+PowerFloat.InputBegan:Connect(function(input)
+
+	if POWER_LOCKED then
+		return
+	end
+
+	if input.UserInputType ==
+		Enum.UserInputType.MouseButton1
+		or input.UserInputType ==
+		Enum.UserInputType.Touch then
+
+		powerButtonDragging = true
+		powerMoved = false
+
+		powerStart =
+			input.Position
+
+		powerStartPos =
+			PowerFloat.Position
+	end
+end)
+
+UIS.InputChanged:Connect(function(input)
+
+	if not powerButtonDragging
+		or POWER_LOCKED then
+		return
+	end
+
+	if input.UserInputType ==
+		Enum.UserInputType.MouseMovement
+		or input.UserInputType ==
+		Enum.UserInputType.Touch then
+
+		local delta =
+			input.Position -
+			powerStart
+
+		if delta.Magnitude > 8 then
+			powerMoved = true
+		end
+
+		PowerFloat.Position =
+			UDim2.new(
+				powerStartPos.X.Scale,
+				powerStartPos.X.Offset + delta.X,
+				powerStartPos.Y.Scale,
+				powerStartPos.Y.Offset + delta.Y
+			)
+	end
+end)
+
+UIS.InputEnded:Connect(function(input)
+
+	if input.UserInputType ==
+		Enum.UserInputType.MouseButton1
+		or input.UserInputType ==
+		Enum.UserInputType.Touch then
+
+		powerButtonDragging = false
+	end
+end)
+
+--==================================================
+-- POWER ACTION
+--==================================================
+
+PowerFloat.Activated:Connect(function()
+
+	if powerMoved then
+		powerMoved = false
+		return
+	end
+
+	if not POWER then
+		return
+	end
+
+	local char =
+		LP.Character
+
+	local root =
+		char and char:FindFirstChild(
+			"HumanoidRootPart"
+		)
+
+	if not root then
+		return
+	end
+
+	root.CFrame =
+		root.CFrame +
+		root.CFrame.LookVector *
+		POWER_DISTANCE
+end)
+
+PowerButton.MouseButton1Click:Connect(function()
+
+	POWER =
+		not POWER
+
+	PowerButton.Text =
+		POWER
+		and "⚡ POWER : ON"
+		or "⚡ POWER : OFF"
+
+	PowerButton.BackgroundColor3 =
+		POWER
+		and Color3.fromRGB(40,180,40)
+		or Color3.fromRGB(180,50,50)
+
+	PowerFloat.Visible =
+		POWER
+end)
+
+--==================================================
+-- RESOURCE CACHE
+--==================================================
+
+local Cache = {
+	Wood = {},
+	Stone = {},
+	Apple = {},
+	Food = {}
+}
+
+local function GetRoot(obj)
+
+	if obj:IsA("BasePart") then
+		return obj
+	end
+
+	if obj:IsA("Model") then
+
+		return obj.PrimaryPart
+			or obj:FindFirstChildWhichIsA(
+				"BasePart",
+				true
+			)
+	end
+end
+
+local function GetType(obj)
+
+	local n =
+		obj.Name:lower()
+
+	if n:find("wood")
+		or n:find("tree")
+		or n:find("log") then
+
+		return "Wood"
+	end
+
+	if n:find("stone")
+		or n:find("rock")
+		or n:find("ore") then
+
+		return "Stone"
+	end
+
+	if n:find("apple") then
+		return "Apple"
+	end
+
+	if n:find("food")
+		or n:find("meat")
+		or n:find("berry")
+		or n:find("fish") then
+
+		return "Food"
+	end
+end
+
+local function ScanResources()
+
+	local new = {
+		Wood = {},
+		Stone = {},
+		Apple = {},
+		Food = {}
+	}
+
+	for _,obj in ipairs(
+		workspace:GetDescendants()
+	) do
+
+		if obj:IsA("BasePart")
+			or obj:IsA("Model") then
+
+			local t =
+				GetType(obj)
+
+			local r =
+				t and GetRoot(obj)
+
+			if t and r then
+
+				table.insert(
+					new[t],
+					{
+						Root = r,
+						Type = t,
+						Name = t
+					}
+				)
+			end
+		end
+	end
+
+	Cache = new
+end
+
+--==================================================
+-- PLAYER CACHE
+--==================================================
+
+local PlayersCache = {}
+
+local function ScanPlayers()
+
+	local char =
+		LP.Character
+
+	local root =
+		char and char:FindFirstChild(
+			"HumanoidRootPart"
+		)
+
+	if not root then
+
+		PlayersCache = {}
+
+		return
+	end
+
+	local list = {}
+
+	for _,p in ipairs(
+		Players:GetPlayers()
+	) do
+
+		if p ~= LP then
+
+			local c =
+				p.Character
+
+			local r =
+				c and c:FindFirstChild(
+					"HumanoidRootPart"
+				)
+
+			local h =
+				c and c:FindFirstChildOfClass(
+					"Humanoid"
+				)
+
+			if r and h and h.Health > 0 then
+
+				table.insert(
+					list,
+					{
+						Player = p,
+						Root = r,
+						Type = "Player",
+						Name = p.DisplayName,
+						Distance =
+							(root.Position -
+							r.Position).Magnitude
+					}
+				)
+			end
+		end
+	end
+
+	table.sort(
+		list,
+		function(a,b)
+			return a.Distance < b.Distance
+		end
+	)
+
+	PlayersCache = {}
+
+	for i = 1,
+		math.min(
+			MAX_PLAYER,
+			#list
+		) do
+
+		PlayersCache[i] =
+			list[i]
+	end
+end
+
+--==================================================
+-- FARM TARGET
+--==================================================
+
+local function GetFarmTarget()
+
+	local char =
+		LP.Character
+
+	local root =
+		char and char:FindFirstChild(
+			"HumanoidRootPart"
+		)
+
+	if not root then
+		return nil
+	end
+
+	local best
+	local bestDistance =
+		math.huge
+
+	for _,data in ipairs(
+		Cache[FARM_TYPE] or {}
+	) do
+
+		local r =
+			data.Root
+
+		if r and r.Parent then
+
+			local d =
+				(root.Position -
+				r.Position).Magnitude
+
+			if d < bestDistance then
+
+				bestDistance = d
+				best = data
+			end
+		end
+	end
+
+	return best
+end
+
+--==================================================
+-- FARM
+--==================================================
+
+FarmButton.MouseButton1Click:Connect(function()
+
+	AUTO_FARM =
+		not AUTO_FARM
+
+	FarmButton.Text =
+		AUTO_FARM
+		and "AUTO FARM : ON"
+		or "AUTO FARM : OFF"
+
+	FarmButton.BackgroundColor3 =
+		AUTO_FARM
+		and Color3.fromRGB(40,180,40)
+		or Color3.fromRGB(180,50,50)
+end)
+
+PlayerFarmButton.MouseButton1Click:Connect(function()
+
+	PLAYER_FARM =
+		not PLAYER_FARM
+
+	PlayerFarmButton.Text =
+		PLAYER_FARM
+		and "AUTO FARM PLAYER : ON"
+		or "AUTO FARM PLAYER : OFF"
+
+	PlayerFarmButton.BackgroundColor3 =
+		PLAYER_FARM
+		and Color3.fromRGB(40,180,40)
+		or Color3.fromRGB(180,50,50)
+end)
+
+local FarmTypes = {
+	"Wood",
+	"Stone",
+	"Apple",
+	"Food"
+}
+
+local FarmIndex = 1
+
+Select.MouseButton1Click:Connect(function()
+
+	FarmIndex += 1
+
+	if FarmIndex >
+		#FarmTypes then
+
+		FarmIndex = 1
+	end
+
+	FARM_TYPE =
+		FarmTypes[FarmIndex]
+
+	Select.Text =
+		FARM_TYPE.." ▼"
+
+	FarmLabel.Text =
+		"Target: "..FARM_TYPE
+end)
+
+task.spawn(function()
+
+	while Gui.Parent do
+
+		local char =
+			LP.Character
+
+		local humanoid =
+			char and char:FindFirstChildOfClass(
+				"Humanoid"
+			)
+
+		if humanoid then
+
+			humanoid.WalkSpeed =
+				math.clamp(
+					FARM_SPEED,
+					16,
+					20
+				)
+
+			if AUTO_FARM then
+
+				local target =
+					GetFarmTarget()
+
+				if target
+					and target.Root then
+
+					humanoid:MoveTo(
+						target.Root.Position
+					)
+				end
+			end
+
+			if PLAYER_FARM then
+
+				local target =
+					PlayersCache[1]
+
+				if target
+					and target.Root then
+
+					humanoid:MoveTo(
+						target.Root.Position
+					)
+				end
+			end
+		end
+
+		task.wait(.15)
+	end
+end)
+
+--==================================================
+-- ESP
+--==================================================
+
+local ESPLabels = {}
+
+local TOTAL =
+	MAX_PLAYER +
+	MAX_RESOURCE * 4
+
+for i = 1,TOTAL do
+
+	local label =
+		Instance.new("TextLabel")
+
+	label.Size =
+		UDim2.fromOffset(
+			170,
+			35
+		)
+
+	label.AnchorPoint =
+		Vector2.new(.5,.5)
+
+	label.BackgroundTransparency = 1
+
+	label.TextColor3 =
+		Color3.new(1,1,1)
+
+	label.TextStrokeTransparency = 0
+
+	label.Font =
+		Enum.Font.GothamBold
+
+	label.TextSize = 13
+	label.Visible = false
+	label.Parent = Gui
+
+	ESPLabels[i] =
+		label
+end
+
+local function ESPColor(t)
+
+	if t == "Player" then
+
+		return Color3.fromRGB(
+			0,255,0
+		)
+
+	elseif t == "Wood" then
+
+		return Color3.fromRGB(
+			170,100,40
+		)
+
+	elseif t == "Stone" then
+
+		return Color3.fromRGB(
+			200,200,200
+		)
+
+	elseif t == "Apple" then
+
+		return Color3.fromRGB(
+			255,40,40
+		)
+
+	elseif t == "Food" then
+
+		return Color3.fromRGB(
+			255,180,0
+		)
+	end
+
+	return Color3.new(1,1,1)
+end
+
+local function HideESP()
+
+	for _,label in ipairs(
+		ESPLabels
+	) do
+
+		label.Visible = false
+	end
+end
+
+task.spawn(function()
+
+	while Gui.Parent do
+
+		ScanResources()
+
+		task.wait(
+			RESOURCE_DELAY
+		)
+	end
+end)
+
+task.spawn(function()
+
+	while Gui.Parent do
+
+		ScanPlayers()
+
+		task.wait(
+			PLAYER_DELAY
+		)
+	end
+end)
+
+RunService.RenderStepped:Connect(function()
+
+	if not ESP then
+
+		HideESP()
+
+		return
+	end
+
+	local camera =
+		workspace.CurrentCamera
+
+	local char =
+		LP.Character
+
+	local root =
+		char and char:FindFirstChild(
+			"HumanoidRootPart"
+		)
+
+	if not camera or not root then
+
+		HideESP()
+
+		return
+	end
+
+	local targets = {}
+
+	for _,d in ipairs(
+		PlayersCache
+	) do
+
+		table.insert(
+			targets,
+			d
+		)
+	end
+
+	for _,list in pairs(Cache) do
+
+		local sorted = {}
+
+		for _,d in ipairs(list) do
+
+			if d.Root
+				and d.Root.Parent then
+
+				d.Distance =
+					(root.Position -
+					d.Root.Position).Magnitude
+
+				table.insert(
+					sorted,
+					d
+				)
+			end
+		end
+
+		table.sort(
+			sorted,
+			function(a,b)
+				return a.Distance < b.Distance
+			end
+		)
+
+		for i = 1,
+			math.min(
+				MAX_RESOURCE,
+				#sorted
+			) do
+
+			table.insert(
+				targets,
+				sorted[i]
+			)
+		end
+	end
+
+	for i = 1,TOTAL do
+
+		local label =
+			ESPLabels[i]
+
+		local d =
+			targets[i]
+
+		if not d
+			or not d.Root
+			or not d.Root.Parent then
+
+			label.Visible = false
+
+			continue
+		end
+
+		local pos =
+			camera:WorldToViewportPoint(
+				d.Root.Position
+			)
+
+		if pos.Z <= 0 then
+
+			label.Visible = false
+
+			continue
+		end
+
+		label.Position =
+			UDim2.fromOffset(
+				math.clamp(
+					pos.X,
+					50,
+					camera.ViewportSize.X-50
+				),
+				math.clamp(
+					pos.Y-25,
+					20,
+					camera.ViewportSize.Y-20
+				)
+			)
+
+		label.TextColor3 =
+			ESPColor(d.Type)
+
+		label.Text =
+			d.Name..
+			"\n"..
+			math.floor(
+				d.Distance
+			)..
+			" studs"
+
+		label.Visible = true
+	end
+end)
+
+ESPButton.MouseButton1Click:Connect(function()
+
+	ESP =
+		not ESP
+
+	ESPButton.Text =
+		ESP
+		and "ESP : ON"
+		or "ESP : OFF"
+
+	ESPButton.BackgroundColor3 =
+		ESP
+		and Color3.fromRGB(40,180,40)
+		or Color3.fromRGB(180,50,50)
+
+	if not ESP then
+		HideESP()
+	end
+end)
+
+--==================================================
+-- AIM - NEAREST PLAYER
+--==================================================
+
+local function FindAimTarget()
+
+	local camera =
+		workspace.CurrentCamera
+
+	if not camera then
+		return nil
+	end
+
+	local center =
+		Vector2.new(
+			camera.ViewportSize.X/2,
+			camera.ViewportSize.Y/2
+		)
+
+	local best
+	local bestFOV =
+		AIM_FOV
+
+	for _,p in ipairs(
+		Players:GetPlayers()
+	) do
+
+		if p ~= LP then
+
+			local c =
+				p.Character
+
+			local root =
+				c and c:FindFirstChild(
+					"HumanoidRootPart"
+				)
+
+			local humanoid =
+				c and c:FindFirstChildOfClass(
+					"Humanoid"
+				)
+
+			if root
+				and humanoid
+				and humanoid.Health > 0 then
+
+				local screen,visible =
+					camera:WorldToViewportPoint(
+						root.Position
+					)
+
+				if visible
+					and screen.Z > 0 then
+
+					local point =
+						Vector2.new(
+							screen.X,
+							screen.Y
+						)
+
+					local fov =
+						(point-center).Magnitude
+
+					if fov < bestFOV then
+
+						bestFOV = fov
+						best = p
+					end
+				end
+			end
+		end
+	end
+
+	return best
+end
+
+AIMButton.MouseButton1Click:Connect(function()
+
+	AIM =
+		not AIM
+
+	AIMButton.Text =
+		AIM
+		and "AIM : ON"
+		or "AIM : OFF"
+
+	AIMButton.BackgroundColor3 =
+		AIM
+		and Color3.fromRGB(40,180,40)
+		or Color3.fromRGB(180,50,50)
+end)
+
+task.spawn(function()
+
+	while Gui.Parent do
+
+		if AIM then
+
+			AimTarget =
+				FindAimTarget()
+
+		else
+
+			AimTarget = nil
+		end
+
+		task.wait(.1)
+	end
+end)
+
+-- AIM CAMERA
+RunService.RenderStepped:Connect(function()
+
+	if not AIM
+		or not AimTarget then
+
+		return
+	end
+
+	local camera =
+		workspace.CurrentCamera
+
+	local c =
+		AimTarget.Character
+
+	local root =
+		c and c:FindFirstChild(
+			"HumanoidRootPart"
+		)
+
+	if not camera
+		or not root then
+
+		return
+	end
+
+	camera.CFrame =
+		CFrame.lookAt(
+			camera.CFrame.Position,
+			root.Position
+		)
+end)
+
+--==================================================
+-- FULL BRIGHT
+--==================================================
+
+local SavedLighting = {}
+
+local function ApplyBright()
+
+	if FULL_BRIGHT then
+
+		SavedLighting.Brightness =
+			Lighting.Brightness
+
+		SavedLighting.ClockTime =
+			Lighting.ClockTime
+
+		SavedLighting.GlobalShadows =
+			Lighting.GlobalShadows
+
+		Lighting.Brightness = 3
+		Lighting.ClockTime = 14
+		Lighting.GlobalShadows = false
+
+	else
+
+		if SavedLighting.Brightness then
+
+			Lighting.Brightness =
+				SavedLighting.Brightness
+		end
+
+		if SavedLighting.ClockTime then
+
+			Lighting.ClockTime =
+				SavedLighting.ClockTime
+		end
+
+		if SavedLighting.GlobalShadows ~= nil then
+
+			Lighting.GlobalShadows =
+				SavedLighting.GlobalShadows
+		end
+	end
+end
+
+BrightButton.MouseButton1Click:Connect(function()
+
+	FULL_BRIGHT =
+		not FULL_BRIGHT
+
+	BrightButton.Text =
+		FULL_BRIGHT
+		and "☀ FULL BRIGHT : ON"
+		or "☀ FULL BRIGHT : OFF"
+
+	BrightButton.BackgroundColor3 =
+		FULL_BRIGHT
+		and Color3.fromRGB(40,180,40)
+		or Color3.fromRGB(180,50,50)
+
+	ApplyBright()
+end)
+
+--==================================================
+-- NO FOG
+--==================================================
+
+local FogObjects = {}
+
+local function ApplyFog()
+
+	if NO_FOG then
+
+		for _,obj in ipairs(
+			Lighting:GetChildren()
+		) do
+
+			if obj:IsA("Atmosphere") then
+
+				FogObjects[obj] = {
+					Density = obj.Density,
+					Haze = obj.Haze
+				}
+
+				obj.Density = 0
+				obj.Haze = 0
+			end
+		end
+
+	else
+
+		for obj,data in pairs(
+			FogObjects
+		) do
+
+			if obj
+				and obj.Parent then
+
+				obj.Density =
+					data.Density
+
+				obj.Haze =
+					data.Haze
+			end
+		end
+
+		FogObjects = {}
+	end
+end
+
+FogButton.MouseButton1Click:Connect(function()
+
+	NO_FOG =
+		not NO_FOG
+
+	FogButton.Text =
+		NO_FOG
+		and "🌫 NO FOG : ON"
+		or "🌫 NO FOG : OFF"
+
+	FogButton.BackgroundColor3 =
+		NO_FOG
+		and Color3.fromRGB(40,180,40)
+		or Color3.fromRGB(180,50,50)
+
+	ApplyFog()
+end)
+
+--==================================================
+-- ANTI AFK
+--==================================================
+
+LP.Idled:Connect(function()
+
+	if not ANTI_AFK then
+		return
+	end
+
+	VirtualUser:CaptureController()
+
+	VirtualUser:ClickButton2(
+		Vector2.new(0,0)
+	)
+end)
+
+AFKButton.MouseButton1Click:Connect(function()
+
+	ANTI_AFK =
+		not ANTI_AFK
+
+	AFKButton.Text =
+		ANTI_AFK
+		and "💤 ANTI AFK : ON"
+		or "💤 ANTI AFK : OFF"
+
+	AFKButton.BackgroundColor3 =
+		ANTI_AFK
+		and Color3.fromRGB(40,180,40)
+		or Color3.fromRGB(180,50,50)
+end)
+
+--==================================================
+-- WARNING 30 STUDS
+--==================================================
+
+local WarningGui = Instance.new("TextLabel")
+
+WarningGui.Size =
+	UDim2.fromOffset(280,48)
+
+WarningGui.Position =
+	UDim2.new(.5,-140,.08,0)
+
+WarningGui.BackgroundColor3 =
+	Color3.fromRGB(180,50,50)
+
+WarningGui.TextColor3 =
+	Color3.new(1,1,1)
+
+WarningGui.Font =
+	Enum.Font.GothamBold
+
+WarningGui.TextSize = 13
+WarningGui.TextWrapped = true
+
+WarningGui.Visible = false
+WarningGui.BorderSizePixel = 0
+WarningGui.Parent = Gui
+
+Instance.new("UICorner",WarningGui)
+	.CornerRadius = UDim.new(0,10)
+
+WarningButton.MouseButton1Click:Connect(function()
+
+	WARNING =
+		not WARNING
+
+	WarningButton.Text =
+		WARNING
+		and "⚠ WARNING 30m : ON"
+		or "⚠ WARNING 30m : OFF"
+
+	WarningButton.BackgroundColor3 =
+		WARNING
+		and Color3.fromRGB(40,180,40)
+		or Color3.fromRGB(180,50,50)
+
+	if not WARNING then
+		WarningGui.Visible = false
+	end
+end)
+
+task.spawn(function()
+
+	while Gui.Parent do
+
+		if WARNING then
+
+			local char =
+				LP.Character
+
+			local root =
+				char and char:FindFirstChild(
+					"HumanoidRootPart"
+				)
+
+			local closest
+			local closestDistance =
+				WARNING_DISTANCE
+
+			if root then
+
+				for _,p in ipairs(
+					Players:GetPlayers()
+				) do
+
+					if p ~= LP then
+
+						local c =
+							p.Character
+
+						local r =
+							c and c:FindFirstChild(
+								"HumanoidRootPart"
+							)
+
+						if r then
+
+							local distance =
+								(
+									root.Position -
+									r.Position
+								).Magnitude
+
+							if distance <=
+								closestDistance then
+
+								closestDistance =
+									distance
+
+								closest = p
+							end
+						end
+					end
+				end
+			end
+
+			if closest then
+
+				WarningGui.Text =
+					"⚠ "..closest.DisplayName..
+					" ở gần!\n"..
+					math.floor(
+						closestDistance
+					)..
+					" studs"
+
+				WarningGui.Visible = true
+
+			else
+
+				WarningGui.Visible = false
+			end
+
+		else
+
+			WarningGui.Visible = false
+		end
+
+		task.wait(.25)
+	end
+end)
+
+--==================================================
+-- TABS
+--==================================================
+
+local function Tab(name)
+
+	ESPPage.Visible =
+		name == "ESP"
+
+	AIMPage.Visible =
+		name == "AIM"
+
+	FarmPage.Visible =
+		name == "FARM"
+
+	MiscPage.Visible =
+		name == "MISC"
+
+	ESPTab.BackgroundColor3 =
+		name == "ESP"
+		and Color3.fromRGB(0,170,255)
+		or Color3.fromRGB(50,50,50)
+
+	AIMTab.BackgroundColor3 =
+		name == "AIM"
+		and Color3.fromRGB(0,170,255)
+		or Color3.fromRGB(50,50,50)
+
+	FarmTab.BackgroundColor3 =
+		name == "FARM"
+		and Color3.fromRGB(0,170,255)
+		or Color3.fromRGB(50,50,50)
+
+	MiscTab.BackgroundColor3 =
+		name == "MISC"
+		and Color3.fromRGB(0,170,255)
+		or Color3.fromRGB(50,50,50)
+end
+
+ESPTab.MouseButton1Click:Connect(function()
+	Tab("ESP")
+end)
+
+AIMTab.MouseButton1Click:Connect(function()
+	Tab("AIM")
+end)
+
+FarmTab.MouseButton1Click:Connect(function()
+	Tab("FARM")
+end)
+
+MiscTab.MouseButton1Click:Connect(function()
+	Tab("MISC")
+end)
+
+--==================================================
+-- HIDE / SHOW
+--==================================================
+
+local Show = Instance.new("TextButton")
+
+Show.Size =
+	UDim2.fromOffset(48,48)
+
+Show.Position =
+	UDim2.new(.5,-24,.3,0)
+
+Show.BackgroundColor3 =
+	Color3.fromRGB(40,40,40)
+
+Show.Text = "⚡"
+
+Show.TextColor3 =
+	Color3.new(1,1,1)
+
+Show.TextSize = 20
+Show.Font =
+	Enum.Font.GothamBold
+
+Show.BorderSizePixel = 0
+Show.Visible = false
+Show.Active = true
+Show.Parent = Gui
+
+Instance.new("UICorner",Show)
+	.CornerRadius = UDim.new(0,10)
+
+Hide.MouseButton1Click:Connect(function()
+
+	Main.Visible = false
+	Show.Visible = true
+end)
+
+Show.MouseButton1Click:Connect(function()
+
+	Main.Visible = true
+	Show.Visible = false
+end)
+
+--==================================================
+-- DRAG MAIN GUI
+--==================================================
+
+local function Drag(frame)
+
+	local dragging = false
+	local start
+	local startPos
+
+	frame.InputBegan:Connect(function(input)
+
+		if input.UserInputType ==
+			Enum.UserInputType.MouseButton1
+			or input.UserInputType ==
+			Enum.UserInputType.Touch then
+
+			dragging = true
+
+			start =
+				input.Position
+
+			startPos =
+				frame.Position
+
+			input.Changed:Connect(function()
+
+				if input.UserInputState ==
+					Enum.UserInputState.End then
+
+					dragging = false
+				end
+			end)
+		end
+	end)
+
+	UIS.InputChanged:Connect(function(input)
+
+		if not dragging then
+			return
+		end
+
+		if input.UserInputType ==
+			Enum.UserInputType.MouseMovement
+			or input.UserInputType ==
+			Enum.UserInputType.Touch then
+
+			local delta =
+				input.Position-start
+
+			frame.Position =
+				UDim2.new(
+					startPos.X.Scale,
+					startPos.X.Offset+delta.X,
+					startPos.Y.Scale,
+					startPos.Y.Offset+delta.Y
+				)
+		end
+	end)
+end
+
+Drag(Main)
+Drag(Show)
+
+--==================================================
+-- INITIALIZE
+--==================================================
+
+SetAIMFOV(
+	AIMSlider.AbsolutePosition.X +
+	AIMSlider.AbsoluteSize.X *
+	((AIM_FOV-1)/49)
+)
+
+SetSpeed(
+	SpeedSlider.AbsolutePosition.X +
+	SpeedSlider.AbsoluteSize.X *
+	((FARM_SPEED-16)/4)
+)
+
+SetPower(
+	PowerSlider.AbsolutePosition.X
+)
+
+ScanResources()
+ScanPlayers()
+
+print("⚡ TRIBE SURVIVAL HUB V3 LOADED")
+print("🔒 Power Position Lock: Ready")
